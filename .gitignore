@@ -1,0 +1,4 @@
+cursor_backup.json
+cursor_state.json
+__pycache__/
+*.pyc
