@@ -317,7 +317,7 @@ def render_violent_prism_frame(size: int, frame_idx: int, n_frames: int, mode: s
 
     sd_blade = sd_polygon(x, y, verts)
 
-    # 1. Clean jet-black outer rim around blade (zero exterior lightning)
+    # 1. Clean jet-black outer rim around blade
     halo_alpha = (1.0 - smoothstep(0.014, 0.026, sd_blade)) * 0.99
     canvas = alpha_over(canvas, obsidian, halo_alpha)
 

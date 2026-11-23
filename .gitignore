@@ -1,4 +1,9 @@
 cursor_backup.json
 cursor_state.json
+trail.pid
+trail.log
+trail_err.log
+click_left.wav
+click_right.wav
 __pycache__/
 *.pyc
