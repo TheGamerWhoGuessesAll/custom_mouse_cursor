@@ -12,10 +12,19 @@ REG_PATH = r"Control Panel\Cursors"
 CURSOR_MAP = {
     "Arrow": os.path.join(BASE_DIR, "cyber_prism_arrow.ani"),
     "Hand": os.path.join(BASE_DIR, "cyber_prism_hand.ani"),
+    "Help": os.path.join(BASE_DIR, "cyber_prism_help.ani"),
+    "NWPen": os.path.join(BASE_DIR, "cyber_prism_pen.ani"),
     "IBeam": os.path.join(BASE_DIR, "cyber_prism_ibeam.ani"),
     "AppStarting": os.path.join(BASE_DIR, "cyber_prism_busy.ani"),
     "Wait": os.path.join(BASE_DIR, "cyber_prism_busy.ani"),
-    "Crosshair": os.path.join(BASE_DIR, "cyber_prism_busy.ani"),
+    "Crosshair": os.path.join(BASE_DIR, "cyber_prism_crosshair.ani"),
+    "SizeNS": os.path.join(BASE_DIR, "cyber_prism_sizens.ani"),
+    "SizeWE": os.path.join(BASE_DIR, "cyber_prism_sizewe.ani"),
+    "SizeNWSE": os.path.join(BASE_DIR, "cyber_prism_sizenwse.ani"),
+    "SizeNESW": os.path.join(BASE_DIR, "cyber_prism_sizenesw.ani"),
+    "SizeAll": os.path.join(BASE_DIR, "cyber_prism_sizeall.ani"),
+    "UpArrow": os.path.join(BASE_DIR, "cyber_prism_uparrow.ani"),
+    "No": os.path.join(BASE_DIR, "cyber_prism_no.ani"),
 }
 
 SPI_SETCURSORS = 0x0057

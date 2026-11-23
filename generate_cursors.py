@@ -278,9 +278,115 @@ def render_violent_prism_frame(size: int, frame_idx: int, n_frames: int, mode: s
         return Image.fromarray(rgba, mode="RGBA")
 
     # -----------------------------------------------------------------------
-    # ARROW & HAND: Crystalline Fractal Cathedral Zoom + Real Forked Lightning
+    # CROSSHAIR: Crisp Cyber-Prism Precision Crosshair (+)
     # -----------------------------------------------------------------------
-    if mode == "arrow":
+    if mode == "crosshair":
+        cx, cy = 0.50, 0.50
+        d_h = np.minimum(sd_segment(x, y, 0.14, cy, 0.39, cy), sd_segment(x, y, 0.61, cy, 0.86, cy))
+        d_v = np.minimum(sd_segment(x, y, cx, 0.14, cx, 0.39), sd_segment(x, y, cx, 0.61, cx, 0.86))
+        d_dot = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        d_struct = np.minimum(np.minimum(d_h, d_v), d_dot - 0.015)
+
+        canvas = alpha_over(canvas, obsidian, (1.0 - smoothstep(0.014, 0.028, d_struct - 0.010)) * 0.99)
+        fill = 1.0 - smoothstep(0.008, 0.015, d_struct)
+        canvas = alpha_over(canvas, np.array([0.01, 0.03, 0.08], dtype=np.float32) + c_indigo * 0.4, fill * 0.99)
+        bevel = 1.0 - smoothstep(0.004, 0.010, np.abs(d_struct - 0.010))
+        canvas = additive_glow(canvas, c_cyan * 0.45 + c_core * 0.55, bevel * 0.98)
+
+        proj = (x + y) * 0.5
+        shine = np.exp(-(((proj - (phase * 1.85 - 0.45)) / 0.075) ** 2))
+        canvas = additive_glow(canvas, c_core, shine * (d_struct < 0.020) * 0.85)
+        return Image.fromarray((np.clip(canvas, 0.0, 1.0) * 255.0).astype(np.uint8), mode="RGBA")
+
+    # -----------------------------------------------------------------------
+    # RESIZE / MOVE / UPARROW / NO / PEN
+    # -----------------------------------------------------------------------
+    if mode in ("sizens", "sizewe", "sizenwse", "sizenesw", "sizeall", "uparrow", "pen"):
+        if mode == "sizens":
+            ang_r, two_way = 0.0, True
+        elif mode == "sizewe":
+            ang_r, two_way = math.pi / 2.0, True
+        elif mode == "sizenwse":
+            ang_r, two_way = -math.pi / 4.0, True
+        elif mode == "sizenesw":
+            ang_r, two_way = math.pi / 4.0, True
+        elif mode == "uparrow":
+            ang_r, two_way = 0.0, False
+        elif mode == "pen":
+            ang_r, two_way = -math.pi / 4.0, False
+        else:
+            ang_r, two_way = 0.0, True
+
+        dx, dy = x - 0.50, y - 0.50
+        ca, sa = math.cos(-ang_r), math.sin(-ang_r)
+        rx = dx * ca - dy * sa + 0.50
+        ry = dx * sa + dy * ca + 0.50
+
+        if mode == "sizeall":
+            d_shaft = np.minimum(sd_segment(x, y, 0.22, 0.50, 0.78, 0.50), sd_segment(x, y, 0.50, 0.22, 0.50, 0.78)) - 0.020
+            heads = [
+                [(0.50, 0.10), (0.37, 0.26), (0.63, 0.26)],
+                [(0.50, 0.90), (0.37, 0.74), (0.63, 0.74)],
+                [(0.10, 0.50), (0.26, 0.37), (0.26, 0.63)],
+                [(0.90, 0.50), (0.74, 0.37), (0.74, 0.63)],
+            ]
+            sd_shape = d_shaft
+            for h_pts in heads:
+                sd_shape = np.minimum(sd_shape, sd_polygon(x, y, h_pts))
+        elif mode == "pen":
+            pen_pts = [(0.12, 0.12), (0.34, 0.22), (0.86, 0.74), (0.74, 0.86), (0.22, 0.34)]
+            sd_shape = sd_polygon(x, y, pen_pts)
+        elif two_way:
+            d_shaft = sd_segment(rx, ry, 0.50, 0.24, 0.50, 0.76) - 0.022
+            h_top = sd_polygon(rx, ry, [(0.50, 0.10), (0.35, 0.29), (0.65, 0.29)])
+            h_bot = sd_polygon(rx, ry, [(0.50, 0.90), (0.35, 0.71), (0.65, 0.71)])
+            sd_shape = np.minimum(d_shaft, np.minimum(h_top, h_bot))
+        else:
+            d_shaft = sd_segment(rx, ry, 0.50, 0.28, 0.50, 0.84) - 0.026
+            h_top = sd_polygon(rx, ry, [(0.50, 0.10), (0.32, 0.34), (0.68, 0.34)])
+            sd_shape = np.minimum(d_shaft, h_top)
+
+        canvas = alpha_over(canvas, obsidian, (1.0 - smoothstep(0.014, 0.026, sd_shape)) * 0.99)
+        body_a = 1.0 - smoothstep(-0.003, 0.004, sd_shape)
+        wire, facet = crystalline_fractal_zoom(x, y, 0.50, 0.50, f_phase, theta)
+        body_rgb = (
+            np.array([0.01, 0.03, 0.08], dtype=np.float32)
+            + c_indigo * (0.35 * facet[..., None])
+            + c_violet * (0.78 * wire[..., None])
+            + c_cyan * (0.52 * wire[..., None])
+            + c_core * (0.40 * (wire[..., None] ** 2))
+        )
+        canvas = alpha_over(canvas, body_rgb, body_a * 0.99)
+        edge_glow = 1.0 - smoothstep(0.006, 0.013, np.abs(sd_shape))
+        canvas = additive_glow(canvas, c_cyan * 0.40 + c_core * 0.60, edge_glow * 0.99)
+
+        proj = (x + y) * 0.5
+        shine = np.exp(-(((proj - (phase * 1.85 - 0.45)) / 0.075) ** 2))
+        canvas = additive_glow(canvas, c_core, shine * (sd_shape < 0.010) * 0.85)
+        return Image.fromarray((np.clip(canvas, 0.0, 1.0) * 255.0).astype(np.uint8), mode="RGBA")
+
+    if mode == "no":
+        cx, cy = 0.50, 0.50
+        r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        d_ring = np.abs(r - 0.30) - 0.032
+        d_slash = sd_segment(x, y, 0.29, 0.29, 0.71, 0.71) - 0.028
+        sd_shape = np.minimum(d_ring, d_slash)
+
+        canvas = alpha_over(canvas, obsidian, (1.0 - smoothstep(0.014, 0.026, sd_shape)) * 0.99)
+        body_a = 1.0 - smoothstep(-0.003, 0.004, sd_shape)
+        c_warn = np.array([1.00, 0.24, 0.45], dtype=np.float32)
+        canvas = alpha_over(canvas, np.array([0.08, 0.01, 0.03], dtype=np.float32) + c_warn * 0.35, body_a * 0.99)
+        edge_glow = 1.0 - smoothstep(0.006, 0.013, np.abs(sd_shape))
+        canvas = additive_glow(canvas, c_warn * 0.55 + c_core * 0.45, edge_glow * 0.99)
+        proj = (x + y) * 0.5
+        shine = np.exp(-(((proj - (phase * 1.85 - 0.45)) / 0.075) ** 2))
+        canvas = additive_glow(canvas, c_core, shine * (sd_shape < 0.010) * 0.85)
+        return Image.fromarray((np.clip(canvas, 0.0, 1.0) * 255.0).astype(np.uint8), mode="RGBA")
+
+    # -----------------------------------------------------------------------
+    # ARROW, HAND, & HELP: Crystalline Fractal Cathedral Zoom + Slow Shine
+    # -----------------------------------------------------------------------
+    if mode in ("arrow", "help"):
         verts = [
             (0.06, 0.06),
             (0.06, 0.72),
@@ -343,6 +449,20 @@ def render_violent_prism_frame(size: int, frame_idx: int, n_frames: int, mode: s
     shine_pos = phase * 1.85 - 0.45
     shine_band = np.exp(-(((proj - shine_pos) / 0.065) ** 2))
     canvas = additive_glow(canvas, c_core, shine_band * (sd_blade < 0.010) * 0.85)
+
+    # Optional crisp '?' badge in bottom-right for Help cursor
+    if mode == "help":
+        qx, qy = 0.74, 0.72
+        dx_q, dy_q = x - qx, y - qy
+        rq = np.sqrt(dx_q * dx_q + dy_q * dy_q)
+        d_q_arc = np.abs(rq - 0.09)
+        q_mask = (dy_q < 0.02) | (dx_q > 0.0)
+        d_q_arc = np.where(q_mask, d_q_arc, 1e9)
+        d_q_stem = sd_segment(x, y, qx, qy + 0.07, qx, qy + 0.13)
+        d_q_dot = np.sqrt((x - qx) ** 2 + (y - (qy + 0.19)) ** 2)
+        d_q = np.minimum(d_q_arc, np.minimum(d_q_stem, d_q_dot))
+        canvas = alpha_over(canvas, obsidian, (1.0 - smoothstep(0.022, 0.044, d_q)) * 0.99)
+        canvas = additive_glow(canvas, c_cyan * 0.45 + c_core * 0.55, (1.0 - smoothstep(0.010, 0.020, d_q)) * 0.98)
 
     rgba = (np.clip(canvas, 0.0, 1.0) * 255.0).astype(np.uint8)
     return Image.fromarray(rgba, mode="RGBA")
@@ -440,8 +560,18 @@ def main():
     variants = [
         ("arrow", (4, 4)),
         ("hand", (4, 4)),
+        ("help", (4, 4)),
+        ("pen", (8, 8)),
         ("ibeam", (32, 32)),
         ("busy", (32, 32)),
+        ("crosshair", (32, 32)),
+        ("sizens", (32, 32)),
+        ("sizewe", (32, 32)),
+        ("sizenwse", (32, 32)),
+        ("sizenesw", (32, 32)),
+        ("sizeall", (32, 32)),
+        ("uparrow", (32, 6)),
+        ("no", (32, 32)),
     ]
 
     sharpen = ImageFilter.UnsharpMask(radius=0.5, percent=65, threshold=2)
@@ -462,17 +592,16 @@ def main():
             im.resize((64, 64), Image.Resampling.LANCZOS).filter(sharpen)
             for im in ss_frames
         ]
-        gif64_frames = cur_frames
-        all_hi[mode] = hi_frames
+        if mode in ("arrow", "hand", "ibeam", "busy"):
+            all_hi[mode] = hi_frames
+            gif_hi_path = os.path.join(OUT_DIR, f"cyber_prism_{mode}_256.gif")
+            gif_64_path = os.path.join(OUT_DIR, f"cyber_prism_{mode}_64.gif")
+            save_transparent_gif(hi_frames, gif_hi_path, duration_ms=28)
+            save_transparent_gif(cur_frames, gif_64_path, duration_ms=28)
 
-        gif_hi_path = os.path.join(OUT_DIR, f"cyber_prism_{mode}_256.gif")
-        gif_64_path = os.path.join(OUT_DIR, f"cyber_prism_{mode}_64.gif")
         ani_path = os.path.join(OUT_DIR, f"cyber_prism_{mode}.ani")
-
-        save_transparent_gif(hi_frames, gif_hi_path, duration_ms=28)
-        save_transparent_gif(gif64_frames, gif_64_path, duration_ms=28)
         save_ani(cur_frames, ani_path, hotspot_x=hx, hotspot_y=hy, jif_rate=2)
-        print(f"  Saved: {os.path.basename(gif_hi_path)}, {os.path.basename(gif_64_path)}, {os.path.basename(ani_path)}")
+        print(f"  Saved: {os.path.basename(ani_path)}")
 
     preview_path = os.path.join(OUT_DIR, "preview_light_and_dark.gif")
     save_contrast_preview(all_hi, preview_path)
