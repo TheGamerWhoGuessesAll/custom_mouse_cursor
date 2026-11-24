@@ -319,62 +319,25 @@ def render_effects(hwnd, ripples, laser_pts, now: float, max_ripple_age: float =
             gdiplus.GdipDrawLine(gfx, pen, ctypes.c_float(x0 - left), ctypes.c_float(y0 - top), ctypes.c_float(x1 - left), ctypes.c_float(y1 - top))
             gdiplus.GdipDeletePen(pen)
 
-    # CursorFX-style Neon Click Ripples + Radial Burst
+    # Subtle Neon Click Ripple
     for rx, ry, (cr, cg, cb), born in ripples:
         t = (now - born) / max_ripple_age
         if t >= 1.0:
             continue
-        ease = 1.0 - (1.0 - t) ** 2.6
-        fade = (1.0 - t) ** 1.15
+        ease = 1.0 - (1.0 - t) ** 2.4
+        fade = (1.0 - t) ** 1.35
         lx, ly = rx - left, ry - top
 
-        # 1. Instant bright core flash on click (first 35% of animation)
-        if t < 0.35:
-            cf = 1.0 - t / 0.35
-            r_flash = 3.0 + 7.0 * (1.0 - cf)
-            gdiplus.GdipCreateSolidFill(argb(int(180 * cf), 235, 252, 255), ctypes.byref(brush))
-            gdiplus.GdipFillEllipse(gfx, brush, ctypes.c_float(lx - r_flash), ctypes.c_float(ly - r_flash), ctypes.c_float(r_flash * 2), ctypes.c_float(r_flash * 2))
-            gdiplus.GdipDeleteBrush(brush)
-
-        # 2. Primary glowing shockwave ring (outer soft glow + crisp bright ring)
-        rad1 = 4.0 + 34.0 * ease
-        a1_glow = int(110 * fade)
-        a1_core = int(245 * fade)
-        if a1_glow > 6:
-            gdiplus.GdipCreatePen1(argb(a1_glow, cr, cg, cb), ctypes.c_float(4.5), 2, ctypes.byref(pen))
+        rad1 = 3.0 + 18.0 * ease
+        a1_glow = int(55 * fade)
+        a1_core = int(135 * fade)
+        if a1_glow > 4:
+            gdiplus.GdipCreatePen1(argb(a1_glow, cr, cg, cb), ctypes.c_float(2.6), 2, ctypes.byref(pen))
             gdiplus.GdipDrawEllipse(gfx, pen, ctypes.c_float(lx - rad1), ctypes.c_float(ly - rad1), ctypes.c_float(rad1 * 2), ctypes.c_float(rad1 * 2))
             gdiplus.GdipDeletePen(pen)
-        if a1_core > 6:
-            gdiplus.GdipCreatePen1(argb(a1_core, 225, 250, 255), ctypes.c_float(1.6), 2, ctypes.byref(pen))
+        if a1_core > 4:
+            gdiplus.GdipCreatePen1(argb(a1_core, cr, cg, cb), ctypes.c_float(1.3), 2, ctypes.byref(pen))
             gdiplus.GdipDrawEllipse(gfx, pen, ctypes.c_float(lx - rad1), ctypes.c_float(ly - rad1), ctypes.c_float(rad1 * 2), ctypes.c_float(rad1 * 2))
-            gdiplus.GdipDeletePen(pen)
-
-        # 3. Staggered secondary inner ripple ring
-        if t > 0.10:
-            t2 = (t - 0.10) / 0.90
-            ease2 = 1.0 - (1.0 - t2) ** 2.4
-            fade2 = (1.0 - t2) ** 1.3
-            rad2 = 3.0 + 24.0 * ease2
-            a2 = int(200 * fade2)
-            if a2 > 6:
-                gdiplus.GdipCreatePen1(argb(a2, cr, cg, cb), ctypes.c_float(1.4), 2, ctypes.byref(pen))
-                gdiplus.GdipDrawEllipse(gfx, pen, ctypes.c_float(lx - rad2), ctypes.c_float(ly - rad2), ctypes.c_float(rad2 * 2), ctypes.c_float(rad2 * 2))
-                gdiplus.GdipDeletePen(pen)
-
-        # 4. 8 crisp radial neon burst rays shooting outward
-        ray_a = int(220 * ((1.0 - t) ** 1.4))
-        if ray_a > 8:
-            r_in = 5.0 + 22.0 * ease
-            r_out = r_in + 7.5 * (1.0 - t)
-            gdiplus.GdipCreatePen1(argb(ray_a, 220, 250, 255), ctypes.c_float(1.3), 2, ctypes.byref(pen))
-            for k in range(8):
-                ang = k * (math.pi / 4.0)
-                ca, sa = math.cos(ang), math.sin(ang)
-                gdiplus.GdipDrawLine(
-                    gfx, pen,
-                    ctypes.c_float(lx + ca * r_in), ctypes.c_float(ly + sa * r_in),
-                    ctypes.c_float(lx + ca * r_out), ctypes.c_float(ly + sa * r_out),
-                )
             gdiplus.GdipDeletePen(pen)
 
     gdiplus.GdipDeleteGraphics(gfx)
@@ -444,7 +407,7 @@ def main():
 
     ripples = []     # [x, y, (r, g, b), born_time]
     laser_pts = []   # [x, y, born_time]
-    max_ripple_age = 0.38
+    max_ripple_age = 0.22
     max_laser_age = 0.26
     was_l = False
     was_r = False

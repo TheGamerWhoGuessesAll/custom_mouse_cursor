@@ -399,10 +399,6 @@ def render_violent_prism_frame(size: int, frame_idx: int, n_frames: int, mode: s
             (0.62, 0.45),
         ]
         core_cx, core_cy = 0.26, 0.41
-        bolt_anchors = [
-            (0.05, 0.22, 0.05, 0.58, (-1.0, 0.0)),   # Subtle left spine spark
-            (0.20, 0.12, 0.50, 0.36, (0.6, -0.8)),   # Subtle right wing spark
-        ]
     else:  # hand
         verts = [
             (0.06, 0.05),
@@ -416,10 +412,6 @@ def render_violent_prism_frame(size: int, frame_idx: int, n_frames: int, mode: s
             (0.64, 0.37),
         ]
         core_cx, core_cy = 0.29, 0.39
-        bolt_anchors = [
-            (0.06, 0.22, 0.09, 0.56, (-1.0, 0.0)),
-            (0.20, 0.12, 0.52, 0.30, (0.6, -0.8)),
-        ]
 
     sd_blade = sd_polygon(x, y, verts)
 
@@ -552,6 +544,43 @@ def save_contrast_preview(all_hi: dict, out_path: str):
         duration=28,
         loop=0,
     )
+
+
+def add_holographic_split_prism(im: Image.Image, phase: float) -> Image.Image:
+    """
+    Add a tight 1px Holographic Split-Prism Border (electric cyan shifted top-left,
+    electric violet shifted bottom-right) just outside the cursor's black border.
+    """
+    arr = np.array(im, dtype=np.float32) / 255.0
+    h, w, _ = arr.shape
+    a = arr[..., 3]
+    sh = max(1, round(w / 48.0))  # ~1px at 64x64, ~5px at 256x256
+
+    a_ul = np.zeros_like(a)
+    a_ul[:-sh, :-sh] = a[sh:, sh:]
+
+    a_dr = np.zeros_like(a)
+    a_dr[sh:, sh:] = a[:-sh, :-sh]
+
+    outside = np.clip(1.0 - a * 1.25, 0.0, 1.0)
+    shimmer = 0.72 + 0.28 * math.sin(phase * 2.0 * math.pi)
+
+    m_cyan = np.clip(a_ul * outside * shimmer, 0.0, 1.0)
+    m_violet = np.clip(a_dr * outside * shimmer, 0.0, 1.0)
+
+    c_cyan = np.array([0.00, 0.94, 1.00], dtype=np.float32)
+    c_violet = np.array([0.68, 0.22, 1.00], dtype=np.float32)
+
+    prism_rgb = c_cyan * m_cyan[..., None] + c_violet * m_violet[..., None]
+    prism_a = np.clip(np.maximum(m_cyan, m_violet) * 0.90, 0.0, 1.0)
+
+    # Composite prism edge behind the main cursor
+    out_a = a + prism_a * (1.0 - a)
+    out_rgb = arr[..., :3] * a[..., None] + prism_rgb * (1.0 - a[..., None])
+    out_rgb = np.where(out_a[..., None] > 1e-5, out_rgb / np.maximum(out_a[..., None], 1e-5), 0.0)
+
+    out = np.concatenate([np.clip(out_rgb, 0.0, 1.0), np.clip(out_a, 0.0, 1.0)[..., None]], axis=-1)
+    return Image.fromarray((out * 255.0).astype(np.uint8), mode="RGBA")
 
 
 def main():
